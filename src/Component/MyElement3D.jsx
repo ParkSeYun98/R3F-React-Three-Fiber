@@ -1,65 +1,89 @@
-import { useFrame } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
-import { useRef } from "react"
+// Drei : R3F에서 사용할 수 있는 유용한 컴포넌트들을 모아놓은 라이브러리
+import { OrbitControls, Box } from "@react-three/drei";
+import { useControls } from "leva";
+import { useEffect, useRef } from "react";
 import * as THREE from "three"
 
-function MyElement3D() {
-    const refMesh = useRef()
+// function MyBox(props) {
+//     const geom = new THREE.BoxGeometry()
 
-    useFrame((state, delta) => {
-        refMesh.current.rotation.z += delta
+//     return (
+//         <mesh
+//             {...props}
+//             geometry={geom}
+//         >
+        
+//         </mesh>
+//     )
+// }
+
+function MyElement3D() {
+
+    const refMesh = useRef()
+    const refWireMesh = useRef()
+
+    const { xSize, ySize, zSize, xSegments, ySegments, zSegments } = useControls({
+        // 초기값 : 1
+        // 0.1과 5 사이의 값을 가진다.
+        // UI를 활용한 조정 단위 : 0.1
+        xSize: { value: 1, min: 0.1, max: 5, step: 0.01 },
+        ySize: { value: 1, min: 0.1, max: 5, step: 0.01 },
+        zSize: { value: 1, min: 0.1, max: 5, step: 0.01 },
+
+        // Segment는 1보다 큰 정수여야 한다.
+        xSegments: { value: 1, min: 1, max: 10, step: 1 },
+        ySegments: { value: 1, min: 1, max: 10, step: 1 },
+        zSegments: { value: 1, min: 1, max: 10, step: 1 }
     })
+ 
+    useEffect(() => {
+        refWireMesh.current.geometry = refMesh.current.geometry
+    }, [xSize, ySize, zSize, xSegments, ySegments, zSegments])
 
     return (
         <>
-            {/* 조명 */}
-            <directionalLight position={[1, 1, 1]} />
-
-            {/* World 좌표계 축 표시 */}
-            <axesHelper scale={10} />
-
-            {/* 마우스 클릭으로 회전 */}
             <OrbitControls />
 
-            {/* mesh : 렌더링할 3차원 모델 */}
-            {/* position 속성 : 좌표계에서 객체의 중심에 해당하는 위치 */}
-            {/* rotation 속성 : 해당 방향으로 해당 각도만큼 회전 */}
-            {/* degToRad(45) : 라디안 -> 우리가 사용하는 각도로 변환 */}
-            {/* scale : 각 방향으로 크기 n배수 조정 */}
-            {/* refMesh에 의해 부모가 회전하게 되면, 자식 mesh들도 모두 같이 회전한다. */}
-            <mesh 
-                ref={refMesh} 
-                position-y={2} 
-                rotation-z={THREE.MathUtils.degToRad(45)}
-                scale={[2, 1, 1]}
-            > 
+            <ambientLight intensity = {0.1} />
 
-                {/* boxGeometry : 정육면체 */}
-                <boxGeometry/>
+            <directionalLight 
+                position = {[2, 1, 3]}
+                intensity = {0.5}
+            />
 
-                {/* 색상을 정의하기 위한 Material */}
-                <meshStandardMaterial 
-                    color="#e67e22" 
-                    opacity={0.5}
-                    transparent={true}
-                />
+            {/* 동일한 Box Geometry를 표현하는 3가지 방법 */}
 
-                {/* 해당 Mesh에 대한 Local 좌표계 축 표시 */}
-                <axesHelper />
 
-                {/* 자식 Mesh */}
-                <mesh
-                    scale={[0.1, 0.1, 0.1]}
-                    position-y={2}
-                >
-                    {/* 구체 */}
-                    <sphereGeometry />
+            {/* 방법 1. mesh */}
 
-                    <meshStandardMaterial color="red" />
 
-                    <axesHelper scale={5} />
-                </mesh>
+            {/* 위에서 UseEffect를 활용하여 하나의 boxGeometry만 사용하고도 두 Mesh 모두 표현 */}
+            <mesh ref={refMesh}>
+                {/* boxGeometry는 args를 활용해서 6개의 값을 지정할 수 있음 */}
+                {/* 직접 지정하지 않으면 기본 값이 들어간다 (1) */}
+            <boxGeometry args={[xSize, ySize, zSize, xSegments, ySegments, zSegments]} />
+
+                <meshStandardMaterial color="#1abc9c" />
             </mesh>
+
+            <mesh ref={refWireMesh}>
+                {/* <boxGeometry /> */}
+
+                <meshStandardMaterial 
+                    emissive = "yellow" 
+                    wireframe={true}
+                />
+            </mesh>
+
+            {/* 방법 2. Drei 라이브러리의 box */}
+            {/* <Box position={[1.2, 0, 0]}>
+                <meshStandardMaterial color={"#8e44ad"} />
+            </Box> */}
+
+            {/* 방법 3. 커스텀 함수를 통해 생성 */}
+            {/* <MyBox position={[-1.2, 0, 0]}>
+                <meshStandardMaterial color="#e74c3c" />
+            </MyBox> */}
         </>
     )
 }
